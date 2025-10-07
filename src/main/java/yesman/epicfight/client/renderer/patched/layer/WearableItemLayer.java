@@ -62,13 +62,10 @@ public class WearableItemLayer<E extends LivingEntity, T extends LivingEntityPat
 	}
 	
 	public static void putModel(ResourceLocation rl, SkinnedMesh skinnedMesh) {
-		if (ARMOR_MODELS.containsKey(rl)) {
-			SkinnedMesh oldModel = ARMOR_MODELS.get(rl);
-			
-			if (oldModel != skinnedMesh) {
-				ARMOR_MODELS.get(rl).destroy();
-			}
-		}
+		ARMOR_MODELS.computeIfPresent(rl, (key, mesh) -> {
+			if (mesh != skinnedMesh) mesh.destroy();
+			return mesh;
+		});
 		
 		ARMOR_MODELS.put(rl, skinnedMesh);
 	}

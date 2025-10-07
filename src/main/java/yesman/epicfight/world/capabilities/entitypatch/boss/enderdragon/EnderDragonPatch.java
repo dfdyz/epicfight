@@ -60,6 +60,7 @@ import yesman.epicfight.api.utils.AttackResult;
 import yesman.epicfight.api.utils.math.MathUtils;
 import yesman.epicfight.api.utils.math.OpenMatrix4f;
 import yesman.epicfight.api.utils.math.Vec3f;
+import yesman.epicfight.client.world.capabilites.entitypatch.player.LocalPlayerPatch;
 import yesman.epicfight.data.loot.function.SetSkillFunction;
 import yesman.epicfight.gameasset.Animations;
 import yesman.epicfight.gameasset.Armatures;
@@ -406,6 +407,12 @@ public class EnderDragonPatch extends MobPatch<EnderDragon> implements InverseKi
 	@Override
 	public boolean shouldMoveOnCurrentSide(ActionAnimation actionAnimation) {
 		return true;
+	}
+	
+	@Override
+	@OnlyIn(Dist.CLIENT)
+	public boolean isOutlineVisible(LocalPlayerPatch player) {
+		return false;
 	}
 	
 	@Override

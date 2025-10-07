@@ -31,7 +31,6 @@ public abstract class AbstractTrailParticle<T extends EntityPatch<?>> extends Te
 	protected final T owner;
 	protected final List<TrailEdge> trailEdges;
 	protected float startEdgeCorrection = 0.0F;
-	protected Vec3 lastPos;
 	protected boolean shouldRemove;
 	
 	protected AbstractTrailParticle(ClientLevel level, T entitypatch, TrailInfo trailInfo) {
@@ -96,15 +95,14 @@ public abstract class AbstractTrailParticle<T extends EntityPatch<?>> extends Te
 			return;
 		}
 		
-		double xd = Math.pow(this.owner.getOriginal().getX() - this.lastPos.x, 2);
-		double yd = Math.pow(this.owner.getOriginal().getY() - this.lastPos.y, 2);
-		double zd = Math.pow(this.owner.getOriginal().getZ() - this.lastPos.z, 2);
+		Vec3 lastPos = this.owner.getOriginal().getPosition(0.0F);
+		double xd = Math.pow(this.owner.getOriginal().getX() - lastPos.x, 2);
+		double yd = Math.pow(this.owner.getOriginal().getY() - lastPos.y, 2);
+		double zd = Math.pow(this.owner.getOriginal().getZ() - lastPos.z, 2);
 		float move = (float)Math.sqrt(xd + yd + zd) * 2.0F;
 		
 		this.setSize(this.bbWidth + move, this.bbHeight + move);
 		this.createNextCurve();
-		
-		this.lastPos = this.owner.getOriginal().getPosition(1.0F);
 	}
 	
 	@Override

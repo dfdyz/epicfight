@@ -185,6 +185,49 @@ import yesman.epicfight.world.level.block.entity.EpicFightBlockEntities;
  *  - Added a variable tickSinceLastJump in ControlEngine to enhance air slash check
  *  
  *  ***************************************************************
+ *  20.12.7
+ *  
+ *  -Player's following action UI-
+ *  Added adaptive crosshair for mining and combat
+ *  Added a block overlay to indicate your next mining action
+ *  Added a reset button on Ingame UI Setup screen
+ *  Added config options for enable/disable both block and entity target
+ *  
+ *  -Graphic fixes-
+ *  Fixed the entity outline rendering abnormally
+ *  Fixed so that compute shader can render entity outline
+ *  Fixed the incorrect normal tweak of compute shader for Iris shaderpacks
+ *  Fixed Phantom ascent crash (#2084)
+ *  
+ *  -Internal changes-
+ *  Added a method that developers can determine a skill book item texture
+ *  {@link SkillCategory#bookIcon}
+ *  
+ *  ***************************************************************
+ *  20.12.8
+ *  
+ *  The default value of canSwitchPlayerMode gamerule changed from false to true
+ *  Fixed the Trident innate skill icon with channel enchantment is broken
+ *  Fixed the animation entries not showing up in the list in the datapack editor
+ *  Fixed the crash when ground slam particle generated
+ *  Fixed the trail particle being dark when afterimage particle is in the screen
+ *  Optimized animation keyframes to accelerate the fps, especially when rendering a model with massive joints
+ *  
+ *  ***************************************************************
+ *  20.12.9
+ *  
+ *  Fixed the normal shading issue both vanilla render pipeline and compute shader
+ *  Added {@link InnateSkillChangeEvent.class} event that is fired after weapon innate skill is changed
+ *  
+ *  ***************************************************************
+ *  20.12.10
+ *  
+ *  Fixed the player not rendering in the inventory screen when shader is activated
+ *  Fixed the crash when guarding (#2102)
+ *  Fixed the crash when loading caused by insufficient shader buffers (#2101)
+ *  Fixed the items are slightly darker than vanilla render results
+ *  Fixed the stun animation list not showing on datapack editor (#2106)
+ *  Now the shield blocking has higher priority than guard skills (#2104)
  *  
  *  --- TO DO ---
  *  
@@ -202,6 +245,10 @@ public class EpicFightMod {
 	public static final String MODID = "epicfight";
 	public static final String EPICSKINS_MODID = "epicskins";
 	public static final Logger LOGGER = LogManager.getLogger(MODID);
+	
+	public static String prefix(String s) {
+		return String.format("%s:%s", MODID, s);
+	}
 	
 	public static void logAndStacktraceIfDevSide(BiConsumer<Logger, String> logFunction, String message, Function<String, Throwable> exceptionProvider) {
 		logAndStacktraceIfDevSide(logFunction, message, exceptionProvider, message);
@@ -247,7 +294,7 @@ public class EpicFightMod {
     	bus.addListener(EpicFightEntities::onSpawnPlacementRegister);
     	
     	if (EpicFightSharedConstants.isPhysicalClient()) {
-			bus.addListener(ComputeShaderProvider::register);
+			bus.addListener(ComputeShaderProvider::epicfight$registerComputeShaders);
 		}
     	
     	MinecraftForge.EVENT_BUS.addListener(this::command);
@@ -393,6 +440,7 @@ public class EpicFightMod {
     public static class ClientModEvents {
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
+        	event.enqueueWork(ComputeShaderProvider::checkIfSupports);
     		event.enqueueWork(EntityPatchProvider::registerEntityPatchesClient);
     		event.enqueueWork(SkillBookScreen::registerIconItems);
     		event.enqueueWork(EpicFightItemProperties::registerItemProperties);

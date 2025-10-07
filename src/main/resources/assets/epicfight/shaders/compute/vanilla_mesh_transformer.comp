@@ -1,4 +1,4 @@
-#version 460 core
+#version 430 core
 
 layout(local_size_x = 128) in;
 
@@ -74,14 +74,15 @@ layout(location=0) uniform vec4 colorIn;
 layout(location=1) uniform uint uv1In;
 layout(location=2) uniform uint uv2In;
 layout(location=3) uniform uint part_offset;
-layout(location=4) uniform mat3 normal_pose;
+layout(location=4) uniform mat4 model_view_matrix;
+layout(location=5) uniform mat3 normal_matrix;
 
 vec4 getPosInPool(int pool_index){
     return vec4(vertices[pool_index].px, vertices[pool_index].py, vertices[pool_index].pz, 1.0);
 }
 
 vec4 getNormInPool(int pool_index){
-    return vec4(normalize(vec3(vertices[pool_index].nx, vertices[pool_index].ny, vertices[pool_index].nz)), 0.0);
+    return vec4(normalize(vec3(vertices[pool_index].nx, vertices[pool_index].ny, vertices[pool_index].nz)), 1.0);
 }
 
 struct VertInfo{
@@ -131,9 +132,8 @@ VertInfo getFinalVertInfo(ElemInfo elem){
     mat4 partTransform = poses[part_offset + elem.part_idx];
     vec4 pos = getPosInPool(elem.pool_idx);
     vec4 norm = getNormInPool(elem.pool_idx);
-	
-    vec4 fpos = vec4(0);
-    vec4 fnorm = vec4(0);
+    vec4 fpos = vec4(0.0);
+    vec4 fnorm = vec4(0.0);
 	
     for (int i = vertices[elem.pool_idx].jts; i < vertices[elem.pool_idx].jte; ++i) {
         if (weights[i] > 0.0) {
@@ -144,8 +144,8 @@ VertInfo getFinalVertInfo(ElemInfo elem){
     }
 	
     VertInfo result;
-    result.pos = fpos.xyz;
-    result.nor = normalize(normal_pose * fnorm.xyz);
+    result.pos = (model_view_matrix * fpos).xyz;
+    result.nor = normalize(normal_matrix * fnorm.xyz);
     result.uv = vec2(uvs[elem.pool_idx*2], uvs[elem.pool_idx*2+1]);
     return result;
 }

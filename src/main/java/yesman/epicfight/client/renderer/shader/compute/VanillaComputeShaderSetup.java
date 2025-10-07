@@ -12,7 +12,6 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.lwjgl.opengl.GL11C;
 import org.lwjgl.opengl.GL15C;
 import org.lwjgl.opengl.GL20C;
-import org.lwjgl.opengl.GL46;
 
 import com.google.common.collect.Lists;
 import com.mojang.blaze3d.platform.GlStateManager;
@@ -23,6 +22,8 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormatElement;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.OutlineBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraftforge.api.distmarker.Dist;
@@ -131,10 +132,10 @@ public class VanillaComputeShaderSetup implements ComputeShaderSetup {
 	@Override
 	public void bindBufferFormat(VertexFormat vertexFormat, int... buffers) {
 		var elems = vertexFormat.getElements();
-
+		
 		for (int i = 0; i < elems.size(); ++i) {
 			VertexFormatElement elem = elems.get(i);
-
+			
 			if (elem == DefaultVertexFormat.ELEMENT_POSITION) {
 				ComputeShaderSetup.bindAttrPointer(buffers[0], 3, i, GL11C.GL_FLOAT);
 			} else if (elem == DefaultVertexFormat.ELEMENT_UV) {
@@ -153,7 +154,7 @@ public class VanillaComputeShaderSetup implements ComputeShaderSetup {
 				ComputeShaderSetup.bindIntAttrPointer(buffers[5], 2, i, GL11C.GL_UNSIGNED_SHORT, 0);
 			}
 		}
-
+		
 		GL15C.glBindBuffer(GL15C.GL_ARRAY_BUFFER, 0);
 	}
 	
@@ -165,7 +166,8 @@ public class VanillaComputeShaderSetup implements ComputeShaderSetup {
 		shader.getUniform("uv1In").uploadUnsignedInt(overlay);
 		shader.getUniform("uv2In").uploadUnsignedInt(light);
 		shader.getUniform("part_offset").uploadUnsignedInt(jointCount);
-		shader.getUniform("normal_pose").uploadMatrix3f(poseStack.last().normal());
+		shader.getUniform("model_view_matrix").uploadMatrix4f(poseStack.last().pose());
+		shader.getUniform("normal_matrix").uploadMatrix3f(poseStack.last().normal());
 		
 		ComputeShaderSetup.POSE_BO.bindBufferBase(0);
 
@@ -206,7 +208,7 @@ public class VanillaComputeShaderSetup implements ComputeShaderSetup {
 	}
 	
 	@Override
-	public void drawWithShader(SkinnedMesh skinnedMesh, PoseStack poseStack, RenderType renderType, int packedLight, float r, float g, float b, float a, int overlay, @Nullable Armature armature, OpenMatrix4f[] poses) {
+	public void drawWithShader(SkinnedMesh skinnedMesh, PoseStack poseStack, MultiBufferSource buffers, RenderType renderType, int packedLight, float r, float g, float b, float a, int overlay, @Nullable Armature armature, OpenMatrix4f[] poses) {
 		// pose setup and upload
 		for (int i = 0; i < poses.length; i++) {
 			TOTAL_POSES[i].load(poses[i]);
@@ -243,25 +245,59 @@ public class VanillaComputeShaderSetup implements ComputeShaderSetup {
 		renderType.setupRenderState();
 
 		var mode = renderType.mode();
+		
 		ShaderInstance shader = RenderSystem.getShader();
 		var format = shader.getVertexFormat();
 
-		this.bindBufferFormat(format,
-				this.outPos.glSSBO, this.outNormal.glSSBO, this.outColor.glSSBO, this.outUv0.glSSBO,
-				this.outUv1.glSSBO, this.outUv2.glSSBO);
+		this.bindBufferFormat(
+			format,
+			this.outPos.glSSBO, this.outNormal.glSSBO, this.outColor.glSSBO, this.outUv0.glSSBO,
+			this.outUv1.glSSBO, this.outUv2.glSSBO
+		);
 
-		ComputeShaderSetup.setShaderDefaultUniforms(shader, mode, poseStack.last().pose(), RenderSystem.getProjectionMatrix(), Minecraft.getInstance().getWindow());
+		ComputeShaderSetup.setShaderDefaultUniforms(RenderSystem.getModelViewMatrix(), shader, mode, Minecraft.getInstance().getWindow());
 		shader.apply();
 		
 		this.applyComputeShader(poseStack, null, r, g, b, a, overlay, packedLight, poses.length);
 		
 		// draw call
-		GL46.glUseProgram(RenderSystem.getShader().getId());
-		GL46.glDrawArrays(VertexFormat.Mode.TRIANGLES.asGLMode, 0, vcount);
+		GL20C.glUseProgram(RenderSystem.getShader().getId());
+		GL11C.glDrawArrays(VertexFormat.Mode.TRIANGLES.asGLMode, 0, vcount);
 		
 		// state restore
 		RenderSystem.getShader().clear();
 		renderType.clearRenderState();
+		
+		if (buffers instanceof OutlineBufferSource outlineBufferSource) {
+			renderType.outline().ifPresent(outlineRendertype -> {
+				outlineRendertype.setupRenderState();
+				
+				var outlinemode = outlineRendertype.mode();
+				ShaderInstance outlineshader = RenderSystem.getShader();
+				var outlineformat = outlineshader.getVertexFormat();
+				
+				this.bindBufferFormat(
+					outlineformat,
+					this.outPos.glSSBO, this.outNormal.glSSBO, this.outColor.glSSBO, this.outUv0.glSSBO,
+					this.outUv1.glSSBO, this.outUv2.glSSBO
+				);
+				
+				ComputeShaderSetup.setShaderDefaultUniforms(RenderSystem.getModelViewMatrix(), outlineshader, outlinemode, Minecraft.getInstance().getWindow());
+				outlineshader.apply();
+				
+				this.applyComputeShader(poseStack, null, outlineBufferSource.teamR / 255.0F, outlineBufferSource.teamG / 255.0F, outlineBufferSource.teamB / 255.0F, outlineBufferSource.teamA / 255.0F, overlay, packedLight, poses.length);
+				
+				// draw call
+				GL20C.glUseProgram(RenderSystem.getShader().getId());
+				GL11C.glDrawArrays(VertexFormat.Mode.TRIANGLES.asGLMode, 0, this.vcount);
+				
+				// state restore
+				RenderSystem.getShader().clear();
+				
+				outlineRendertype.clearRenderState();
+			});
+		}
+		
 		format.clearBufferState();
 
 		GlStateManager._glBindVertexArray(currentBoundVao);

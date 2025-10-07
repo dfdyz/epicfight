@@ -11,6 +11,7 @@ import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import yesman.epicfight.api.client.forgeevent.ProcessEntityPairingPacketEvent;
 import yesman.epicfight.api.utils.math.MathUtils;
 import yesman.epicfight.api.utils.math.OpenMatrix4f;
+import yesman.epicfight.client.world.capabilites.entitypatch.player.LocalPlayerPatch;
 import yesman.epicfight.network.server.SPEntityPairingPacket;
 
 public abstract class EntityPatch<T extends Entity> {
@@ -29,20 +30,6 @@ public abstract class EntityPatch<T extends Entity> {
 	}
 	
 	public void onStopTracking(ServerPlayer trackingPlayer) {
-	}
-	
-	@OnlyIn(Dist.CLIENT)
-	public void fireEntityPairingEvent(SPEntityPairingPacket msg) {
-		ProcessEntityPairingPacketEvent pairingPacketEvent = new ProcessEntityPairingPacketEvent(this, msg);
-		MinecraftForge.EVENT_BUS.post(pairingPacketEvent);
-		
-		if (!pairingPacketEvent.isCanceled()) {
-			this.entityPairing(msg);
-		}
-	}
-	
-	@OnlyIn(Dist.CLIENT)
-	public void entityPairing(SPEntityPairingPacket packet) {
 	}
 	
 	public void onConstructed(T entity) {
@@ -89,4 +76,23 @@ public abstract class EntityPatch<T extends Entity> {
 	}
 	
 	public abstract OpenMatrix4f getModelMatrix(float partialTick);
+	
+	@OnlyIn(Dist.CLIENT)
+	public void fireEntityPairingEvent(SPEntityPairingPacket msg) {
+		ProcessEntityPairingPacketEvent pairingPacketEvent = new ProcessEntityPairingPacketEvent(this, msg);
+		MinecraftForge.EVENT_BUS.post(pairingPacketEvent);
+		
+		if (!pairingPacketEvent.isCanceled()) {
+			this.entityPairing(msg);
+		}
+	}
+	
+	@OnlyIn(Dist.CLIENT)
+	public void entityPairing(SPEntityPairingPacket packet) {
+	}
+	
+	@OnlyIn(Dist.CLIENT)
+	public boolean isOutlineVisible(LocalPlayerPatch player) {
+		return true;
+	}
 }

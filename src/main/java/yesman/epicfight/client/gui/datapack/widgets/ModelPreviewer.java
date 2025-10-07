@@ -925,7 +925,7 @@ public class ModelPreviewer extends AbstractWidget implements ResizableComponent
 					fromAnimation = linkAnimation.getFromAnimation();
 				}
 				
-				this.linkAnimation.getTransfroms().clear();
+				this.linkAnimation.getAnimationClip().reset();
 				this.linkAnimation.setTotalTime(totalTime);
 				this.linkAnimation.setConnectedAnimations(fromAnimation, nextAnimation);
 				
@@ -1070,7 +1070,7 @@ public class ModelPreviewer extends AbstractWidget implements ResizableComponent
 					fromAnimation = linkAnimation.getFromAnimation();
 				}
 				
-				this.linkAnimation.getTransfroms().clear();
+				this.linkAnimation.getAnimationClip().reset();
 				this.linkAnimation.setTotalTime(totalTime);
 				this.linkAnimation.setConnectedAnimations(fromAnimation, nextAnimation);
 				

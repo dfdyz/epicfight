@@ -473,7 +473,7 @@ public class ClientAnimator extends Animator {
 			AssetAccessor<? extends StaticAnimation> currentPlaying = this.getCompositeLivingMotion(this.currentCompositeMotion);
 			AssetAccessor<? extends StaticAnimation> resetPlaying = this.getCompositeLivingMotion(LivingMotions.IDLE);
 			
-			if (currentPlaying != resetPlaying) {
+			if (resetPlaying != null && currentPlaying != resetPlaying) {
 				this.getCompositeLayer(currentPlaying.get().getPriority()).off(this.entitypatch);
 				this.playAnimation(resetPlaying, 0.0F);
 			}

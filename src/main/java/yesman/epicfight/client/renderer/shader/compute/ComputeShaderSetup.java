@@ -15,6 +15,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexFormat;
 
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraftforge.api.distmarker.Dist;
@@ -31,19 +32,12 @@ import yesman.epicfight.main.EpicFightSharedConstants;
 @OnlyIn(Dist.CLIENT)
 public interface ComputeShaderSetup {
     static final int WORK_GROUP_SIZE = 128;
-
+    
 	static final OpenMatrix4f[] TOTAL_POSES = OpenMatrix4f.allocateMatrixArray(EpicFightSharedConstants.MAX_JOINTS);
 	static final OpenMatrix4f[] TOTAL_NORMALS = OpenMatrix4f.allocateMatrixArray(EpicFightSharedConstants.MAX_JOINTS);
+    static final IArrayBufferProxy POSE_BO = ComputeShaderProvider.createDynamicBuffer(TOTAL_POSES, 16, OpenMatrix4f::store);
 
-
-    static final IArrayBufferProxy POSE_BO = ComputeShaderProvider.createDynamicBuffer
-            (TOTAL_POSES, 16, OpenMatrix4f::store);
-
-/*
-	static final DynamicSSBO<OpenMatrix4f> POSE_BO = new DynamicSSBO<>
-            (TOTAL_POSES, (short) 16, DynamicSSBO.DataMode.DYNAMIC, OpenMatrix4f::store);*/
-
-	static void setShaderDefaultUniforms(ShaderInstance shader, VertexFormat.Mode mode, Matrix4f frustumMatrix, Matrix4f projectionMatrix, Window window) {
+	static void setShaderDefaultUniforms(Matrix4f frustumMatrix, ShaderInstance shader, VertexFormat.Mode mode, Window window) {
         for (int i = 0; i < 12; i++) {
             int j = RenderSystem.getShaderTexture(i);
             shader.setSampler("Sampler" + i, j);
@@ -54,9 +48,13 @@ public interface ComputeShaderSetup {
         }
 
         if (shader.PROJECTION_MATRIX != null) {
-            shader.PROJECTION_MATRIX.set(projectionMatrix);
+            shader.PROJECTION_MATRIX.set(RenderSystem.getProjectionMatrix());
         }
-
+        
+		if (shader.INVERSE_VIEW_ROTATION_MATRIX != null) {
+			shader.INVERSE_VIEW_ROTATION_MATRIX.set(RenderSystem.getInverseViewRotationMatrix());
+		}
+		
         if (shader.COLOR_MODULATOR != null) {
             shader.COLOR_MODULATOR.set(RenderSystem.getShaderColor());
         }
@@ -126,7 +124,7 @@ public interface ComputeShaderSetup {
 	
 	void applyComputeShader(PoseStack poseStack, OpenMatrix4f partTransform, float r, float g, float b, float a, int overlay, int light, int jointCount);
 	
-	void drawWithShader(SkinnedMesh skinnedMesh, PoseStack poseStack, RenderType renderType, int packedLight, float r, float g, float b, float a, int overlay, @Nullable Armature armature, OpenMatrix4f[] poses);
+	void drawWithShader(SkinnedMesh skinnedMesh, PoseStack poseStack, MultiBufferSource buffers, RenderType renderType, int packedLight, float r, float g, float b, float a, int overlay, @Nullable Armature armature, OpenMatrix4f[] poses);
 	
 	int vaoId();
 	

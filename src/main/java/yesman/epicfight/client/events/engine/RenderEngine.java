@@ -61,6 +61,7 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.CustomizeGuiOverlayEvent;
 import net.minecraftforge.client.event.RenderGuiEvent;
 import net.minecraftforge.client.event.RenderHandEvent;
+import net.minecraftforge.client.event.RenderHighlightEvent;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 import net.minecraftforge.client.event.RenderLivingEvent;
 import net.minecraftforge.client.event.ViewportEvent;
@@ -89,6 +90,7 @@ import yesman.epicfight.client.mesh.HumanoidMesh;
 import yesman.epicfight.client.renderer.AimHelperRenderer;
 import yesman.epicfight.client.renderer.EpicFightRenderTypes;
 import yesman.epicfight.client.renderer.FirstPersonRenderer;
+import yesman.epicfight.client.renderer.ImaginaryBlockRenderer;
 import yesman.epicfight.client.renderer.patched.entity.PCreeperRenderer;
 import yesman.epicfight.client.renderer.patched.entity.PCustomEntityRenderer;
 import yesman.epicfight.client.renderer.patched.entity.PCustomHumanoidEntityRenderer;
@@ -150,6 +152,7 @@ public class RenderEngine {
 	private final Map<Class<?>, RenderItemBase> itemRendererMapByClass;
 	private final Map<UUID, BossPatch> bossEventOwners = Maps.newConcurrentMap();
 	private final OverlayManager overlayManager;
+	private final ImaginaryBlockRenderer imaginaryBlockRenderer;
 	
 	private AimHelperRenderer aimHelper;
 	private FirstPersonRenderer firstPersonRenderer;
@@ -172,6 +175,7 @@ public class RenderEngine {
 		this.itemRendererMapByInstance = Maps.newHashMap();
 		this.itemRendererMapByClass = Maps.newHashMap();
 		this.overlayManager = new OverlayManager();
+		this.imaginaryBlockRenderer = new ImaginaryBlockRenderer();
 		
 		Map<ResourceLocation, Function<JsonElement, RenderItemBase>> builder = Maps.newHashMap();
 		
@@ -625,28 +629,21 @@ public class RenderEngine {
 				LivingEntityPatch<?> entitypatch = EpicFightCapabilities.getEntityPatch(livingentity, LivingEntityPatch.class);
 				float originalYRot = 0.0F;
 				
-				//Draw the player in inventory
-				if ((event.getPartialTick() == 0.0F || event.getPartialTick() == 1.0F) && entitypatch instanceof LocalPlayerPatch localPlayerPatch) {
+				// Draw the player in inventory
+				if ((event.getPartialTick() == 0.0F || event.getPartialTick() == 1.0F) && entitypatch instanceof LocalPlayerPatch localplayerpatch) {
 					if (entitypatch.overrideRender()) {
-						originalYRot = localPlayerPatch.getModelYRot();
-						localPlayerPatch.setModelYRotInGui(livingentity.getYRot());
+						originalYRot = localplayerpatch.getModelYRot();
+						localplayerpatch.setModelYRotInGui(livingentity.getYRot());
 						event.getPoseStack().translate(0, 0.1D, 0);
+						boolean compusteShaderSetting = ClientConfig.activateComputeShader;
 						
-						boolean usingShader = ClientConfig.activateComputeShader;
-						
-						if (usingShader) {
-							ClientConfig.activateComputeShader = false;
-						}
-						
+						// Disable compute shader
+						ClientConfig.activateComputeShader = false;
 						renderEngine.renderEntityArmatureModel(livingentity, entitypatch, event.getRenderer(), event.getMultiBufferSource(), event.getPoseStack(), event.getPackedLight(), event.getPartialTick());
-						
-						if (usingShader) {
-							ClientConfig.activateComputeShader = true;
-						}
+						ClientConfig.activateComputeShader = compusteShaderSetting;
 						
 						event.setCanceled(true);
-						
-						localPlayerPatch.disableModelYRotInGui(originalYRot);
+						localplayerpatch.disableModelYRotInGui(originalYRot);
 					}
 					
 					return;
@@ -853,6 +850,21 @@ public class RenderEngine {
 					renderEngine.getEntityRenderer(livingentity).render(livingentity, enderdragonpatch, event.getRenderer(), event.getBuffers(), event.getPoseStack(), event.getLight(), event.getPartialRenderTick());
 				});
 			}
+		}
+		
+		@SubscribeEvent
+		public static void renderBlockHighlight(RenderHighlightEvent.Block event) {
+			if (!ClientConfig.enableMineBlockGuide) {
+				return;
+			}
+			
+			EpicFightCapabilities.getUnparameterizedEntityPatch(renderEngine.minecraft.player, LocalPlayerPatch.class).ifPresent(playerpatch -> {
+				if (playerpatch.canPlayAttackAnimation()) {
+					event.setCanceled(true);
+				} else {
+					renderEngine.imaginaryBlockRenderer.render(event.getCamera(), event.getPoseStack(), event.getMultiBufferSource(), renderEngine.minecraft.level, event.getTarget().getBlockPos(), 1.0F, 0, 0, 0.5F);					
+				}
+			});
 		}
 		
 		@SubscribeEvent

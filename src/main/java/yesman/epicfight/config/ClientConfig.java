@@ -28,7 +28,7 @@ import yesman.epicfight.client.gui.HealthBar.HealthBarVisibility;
 import yesman.epicfight.client.gui.ScreenCalculations.AlignDirection;
 import yesman.epicfight.client.gui.ScreenCalculations.HorizontalBasis;
 import yesman.epicfight.client.gui.ScreenCalculations.VerticalBasis;
-import yesman.epicfight.client.gui.screen.config.PreferredItemsScreen;
+import yesman.epicfight.client.gui.screen.config.ItemsPreferenceScreen;
 import yesman.epicfight.client.gui.widgets.ColorSlider;
 import yesman.epicfight.main.AuthenticationHelper.AuthenticationProvider;
 import yesman.epicfight.main.EpicFightMod;
@@ -48,6 +48,8 @@ public class ClientConfig {
 	public static final BooleanValue SHOW_EPICFIGHT_ATTRIBUTES_IN_TOOLTIP = BUILDER.define("ingame.show_epicfight_attributes", () -> true);
 	public static final BooleanValue ACTIVATE_COMPUTE_SHADER = BUILDER.define("ingame.use_compute_shader", () -> false);
 	public static final BooleanValue ENABLE_ANIMATED_FIRST_PERSON_MODEL = BUILDER.define("ingame.first_person_model", () -> true);
+	public static final BooleanValue ENABLE_MINE_BLOCK_GUIDE = BUILDER.define("ingame.enable_mine_block_guide", () -> true);
+	public static final BooleanValue ENABLE_TARGET_ENTITY_GUIDE = BUILDER.define("ingame.enable_target_entity_guide", () -> true);
 	public static final BooleanValue ENABLE_POV_ACTION = BUILDER.define("ingame.enable_pov_action", () -> true);
 	public static final BooleanValue ENABLE_COSMETICS = BUILDER.define("ingame.enable_cosmetics", () -> true);
 	
@@ -110,6 +112,8 @@ public class ClientConfig {
 	public static boolean showEpicFightAttributesInTooltip;
 	public static boolean activateComputeShader;
 	public static boolean enableAnimatedFirstPersonModel;
+	public static boolean enableMineBlockGuide;
+	public static boolean enableTargetEntityGuide;
 	public static boolean enablePovAction;
 	public static boolean enableCosmetics;
 	public static Set<Item> combatPreferredItems;
@@ -153,6 +157,8 @@ public class ClientConfig {
 		showEpicFightAttributesInTooltip = SHOW_EPICFIGHT_ATTRIBUTES_IN_TOOLTIP.get();
 		activateComputeShader = ACTIVATE_COMPUTE_SHADER.get();
 		enableAnimatedFirstPersonModel = ENABLE_ANIMATED_FIRST_PERSON_MODEL.get();
+		enableMineBlockGuide = ENABLE_MINE_BLOCK_GUIDE.get();
+		enableTargetEntityGuide = ENABLE_TARGET_ENTITY_GUIDE.get();
 		enablePovAction = ENABLE_POV_ACTION.get();
 		enableCosmetics = ENABLE_COSMETICS.get();
 		
@@ -164,7 +170,7 @@ public class ClientConfig {
 				.collect(Collectors.toSet());
 		
 		if (combatPreferredItems.isEmpty() && miningPreferredItems.isEmpty()) {
-			PreferredItemsScreen.resetItems();
+			ItemsPreferenceScreen.resetItems();
 		}
 		
 		showTargetIndicator = SHOW_TARGET_INDICATOR.get();
@@ -214,6 +220,8 @@ public class ClientConfig {
 		if (showEpicFightAttributesInTooltip != SHOW_EPICFIGHT_ATTRIBUTES_IN_TOOLTIP.get()) SHOW_EPICFIGHT_ATTRIBUTES_IN_TOOLTIP.set(showEpicFightAttributesInTooltip);
 		if (activateComputeShader != ACTIVATE_COMPUTE_SHADER.get()) ACTIVATE_COMPUTE_SHADER.set(activateComputeShader);
 		if (enableAnimatedFirstPersonModel != ENABLE_ANIMATED_FIRST_PERSON_MODEL.get()) ENABLE_ANIMATED_FIRST_PERSON_MODEL.set(enableAnimatedFirstPersonModel);
+		if (enableMineBlockGuide != ENABLE_MINE_BLOCK_GUIDE.get()) ENABLE_MINE_BLOCK_GUIDE.set(enableMineBlockGuide);
+		if (enableTargetEntityGuide != ENABLE_TARGET_ENTITY_GUIDE.get()) ENABLE_TARGET_ENTITY_GUIDE.set(enableTargetEntityGuide);
 		if (enablePovAction != ENABLE_POV_ACTION.get()) ENABLE_POV_ACTION.set(enablePovAction);
 		if (enableCosmetics != ENABLE_COSMETICS.get()) ENABLE_COSMETICS.set(enableCosmetics);
 		

@@ -9,10 +9,11 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.joml.Matrix3f;
+import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11C;
 import org.lwjgl.opengl.GL15C;
 import org.lwjgl.opengl.GL20C;
-import org.lwjgl.opengl.GL46;
 
 import com.google.common.collect.Lists;
 import com.mojang.blaze3d.platform.GlStateManager;
@@ -22,9 +23,12 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormatElement;
 
+import net.irisshaders.iris.Iris;
 import net.irisshaders.iris.uniforms.CapturedRenderingState;
 import net.irisshaders.iris.vertices.IrisVertexFormats;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.OutlineBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraftforge.api.distmarker.Dist;
@@ -200,6 +204,9 @@ public class IrisComputeShaderSetup implements ComputeShaderSetup {
 		GL15C.glBindBuffer(GL15C.GL_ARRAY_BUFFER, 0);
 	}
 	
+	private static final Matrix4f IDENTITY4X4 = new Matrix4f();
+	private static final Matrix3f IDENTITY3X3 = new Matrix3f();
+	
 	@Override
 	public void applyComputeShader(PoseStack poseStack, OpenMatrix4f partTransform, float r, float g, float b, float a, int overlay, int light, int jointCount) {
 		// shader setup
@@ -211,7 +218,14 @@ public class IrisComputeShaderSetup implements ComputeShaderSetup {
 		shader.getUniform("part_offset").uploadUnsignedInt(jointCount);
 		shader.getUniform("entity_id_0").uploadUnsignedInt(((this.getEntity() << 16) & 0xFFFF0000) | (this.getBlock() & 0xFFFF));
 		shader.getUniform("entity_id_1").uploadUnsignedInt(this.getItem() << 16);
-		shader.getUniform("normalTransform").uploadMatrix3f(poseStack.last().normal());
+		
+		if (!Iris.getIrisConfig().areShadersEnabled()) {
+			shader.getUniform("model_view_matrix").uploadMatrix4f(poseStack.last().pose());
+			shader.getUniform("normal_matrix").uploadMatrix3f(poseStack.last().normal());
+		} else {
+			shader.getUniform("model_view_matrix").uploadMatrix4f(IDENTITY4X4);
+			shader.getUniform("normal_matrix").uploadMatrix3f(IDENTITY3X3);
+		}
 		
 		ComputeShaderSetup.POSE_BO.bindBufferBase(0);
 		
@@ -229,7 +243,7 @@ public class IrisComputeShaderSetup implements ComputeShaderSetup {
 		this.outUv2.bindBufferBase(11);
 		this.outEntityId.bindBufferBase(12);
 		this.outTangent.bindBufferBase(13);
-		
+			
 		this.hiddenFlagsBO.bindBufferBase(14);
 		
 		int workGroupCount = ((this.vcount / 3) + WORK_GROUP_SIZE - 1) / WORK_GROUP_SIZE;
@@ -256,7 +270,7 @@ public class IrisComputeShaderSetup implements ComputeShaderSetup {
 	}
 	
 	@Override
-	public void drawWithShader(SkinnedMesh skinnedMesh, PoseStack poseStack, RenderType renderType, int packedLight, float r, float g, float b, float a, int overlay, @Nullable Armature armature, OpenMatrix4f[] poses) {
+	public void drawWithShader(SkinnedMesh skinnedMesh, PoseStack poseStack, MultiBufferSource buffers, RenderType renderType, int packedLight, float r, float g, float b, float a, int overlay, @Nullable Armature armature, OpenMatrix4f[] poses) {
 		// pose setup and upload
 		for (int i = 0; i < poses.length; i++) {
 			TOTAL_POSES[i].load(poses[i]);
@@ -287,32 +301,65 @@ public class IrisComputeShaderSetup implements ComputeShaderSetup {
 		// state trace
 		int currentBoundVao = GlStateManager._getInteger(GLConstants.GL_VERTEX_ARRAY_BINDING);
 		int currentBoundVbo = GlStateManager._getInteger(GLConstants.GL_VERTEX_ARRAY_BUFFER_BINDING);
-
+		
 		// setup state
 		GlStateManager._glBindVertexArray(this.arrayObjectId);
 		renderType.setupRenderState();
-
+		
 		var mode = renderType.mode();
 		ShaderInstance shader = RenderSystem.getShader();
 		var format = shader.getVertexFormat();
-
-		this.bindBufferFormat(format,
-				this.outPos.glSSBO, this.outNormal.glSSBO, this.outColor.glSSBO,
-				this.outUv0.glSSBO, this.outUv1.glSSBO, this.outUv2.glSSBO,
-				this.outEntityId.glSSBO, this.midUVBO.glSSBO, this.outTangent.glSSBO);
 		
-		ComputeShaderSetup.setShaderDefaultUniforms(shader, mode, poseStack.last().pose(), RenderSystem.getProjectionMatrix(), Minecraft.getInstance().getWindow());
+		this.bindBufferFormat(
+			format,
+			this.outPos.glSSBO, this.outNormal.glSSBO, this.outColor.glSSBO,
+			this.outUv0.glSSBO, this.outUv1.glSSBO, this.outUv2.glSSBO,
+			this.outEntityId.glSSBO, this.midUVBO.glSSBO, this.outTangent.glSSBO
+		);
+		
+		ComputeShaderSetup.setShaderDefaultUniforms(Iris.getIrisConfig().areShadersEnabled() ? poseStack.last().pose() : RenderSystem.getModelViewMatrix(), shader, mode, Minecraft.getInstance().getWindow());
 		shader.apply();
-
+		
 		this.applyComputeShader(poseStack, null, r, g, b, a, overlay, packedLight, poses.length);
 		
 		// draw call
-		GL46.glUseProgram(RenderSystem.getShader().getId());
-		GL46.glDrawArrays(VertexFormat.Mode.TRIANGLES.asGLMode, 0, vcount);
-
+		GL20C.glUseProgram(RenderSystem.getShader().getId());
+		GL11C.glDrawArrays(VertexFormat.Mode.TRIANGLES.asGLMode, 0, this.vcount);
+		
 		// state restore
 		RenderSystem.getShader().clear();
 		renderType.clearRenderState();
+		
+		if (buffers instanceof OutlineBufferSource outlineBufferSource) {
+			renderType.outline().ifPresent(outlineRendertype -> {
+				outlineRendertype.setupRenderState();
+				
+				var outlinemode = outlineRendertype.mode();
+				ShaderInstance outlineshader = RenderSystem.getShader();
+				var outlineformat = outlineshader.getVertexFormat();
+				
+				this.bindBufferFormat(
+					outlineformat,
+					this.outPos.glSSBO, this.outNormal.glSSBO, this.outColor.glSSBO,
+					this.outUv0.glSSBO, this.outUv1.glSSBO, this.outUv2.glSSBO,
+					this.outEntityId.glSSBO, this.midUVBO.glSSBO, this.outTangent.glSSBO
+				);
+				
+				ComputeShaderSetup.setShaderDefaultUniforms(Iris.getIrisConfig().areShadersEnabled() ? poseStack.last().pose() : RenderSystem.getModelViewMatrix(), outlineshader, outlinemode, Minecraft.getInstance().getWindow());
+				outlineshader.apply();
+				this.applyComputeShader(poseStack, null, outlineBufferSource.teamR / 255.0F, outlineBufferSource.teamG / 255.0F, outlineBufferSource.teamB / 255.0F, outlineBufferSource.teamA / 255.0F, overlay, packedLight, poses.length);
+				
+				// draw call
+				GL20C.glUseProgram(RenderSystem.getShader().getId());
+				GL11C.glDrawArrays(VertexFormat.Mode.TRIANGLES.asGLMode, 0, this.vcount);
+				
+				// state restore
+				RenderSystem.getShader().clear();
+				
+				outlineRendertype.clearRenderState();
+			});
+		}
+		
 		format.clearBufferState();
 		
 		GlStateManager._glBindVertexArray(currentBoundVao);

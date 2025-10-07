@@ -21,6 +21,7 @@ import yesman.epicfight.client.ClientEngine;
 import yesman.epicfight.client.gui.ScreenCalculations.AlignDirection;
 import yesman.epicfight.client.gui.ScreenCalculations.HorizontalBasis;
 import yesman.epicfight.client.gui.ScreenCalculations.VerticalBasis;
+import yesman.epicfight.client.gui.screen.config.UISetupScreen;
 import yesman.epicfight.client.world.capabilites.entitypatch.player.LocalPlayerPatch;
 import yesman.epicfight.config.ClientConfig;
 import yesman.epicfight.skill.SkillContainer;
@@ -54,6 +55,10 @@ public class BattleModeGui {
 	}
 	
 	public void renderStaminaBar(ForgeGui gui, GuiGraphics guiGraphics, float partialTick, int screenWidth, int screenHeight) {
+		if (Minecraft.getInstance().screen instanceof UISetupScreen) {
+			return;
+		}
+		
 		LocalPlayerPatch playerpatch = ClientEngine.getInstance().getPlayerPatch();
 		
 		if (playerpatch == null) {
@@ -79,6 +84,10 @@ public class BattleModeGui {
 	}
 	
 	public void renderNormalSkills(ForgeGui gui, GuiGraphics guiGraphics, float partialTick, int screenWidth, int screenHeight) {
+		if (Minecraft.getInstance().screen instanceof UISetupScreen) {
+			return;
+		}
+		
 		LocalPlayerPatch playerpatch = ClientEngine.getInstance().getPlayerPatch();
 		
 		if (playerpatch == null) {
@@ -120,6 +129,10 @@ public class BattleModeGui {
 	}
 	
 	public void renderWeaponInnateSkill(ForgeGui gui, GuiGraphics guiGraphics, float partialTick, int screenWidth, int screenHeight) {
+		if (Minecraft.getInstance().screen instanceof UISetupScreen) {
+			return;
+		}
+		
 		LocalPlayerPatch playerpatch = ClientEngine.getInstance().getPlayerPatch();
 		
 		if (playerpatch == null) {
@@ -138,6 +151,10 @@ public class BattleModeGui {
 	}
 	
 	public void renderCharingBar(ForgeGui gui, GuiGraphics guiGraphics, float partialTick, int screenWidth, int screenHeight) {
+		if (Minecraft.getInstance().screen instanceof UISetupScreen) {
+			return;
+		}
+		
 		LocalPlayerPatch playerpatch = ClientEngine.getInstance().getPlayerPatch();
 		
 		if (playerpatch == null) {

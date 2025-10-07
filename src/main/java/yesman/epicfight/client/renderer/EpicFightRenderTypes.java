@@ -4,7 +4,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.OptionalDouble;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.joml.Vector4f;
@@ -40,6 +42,25 @@ public final class EpicFightRenderTypes extends RenderType {
 		}
 	}
 	
+	private static final BiFunction<ResourceLocation, RenderStateShard.CullStateShard, RenderType> TRIANGULATED_OUTLINE =
+		Util.memoize((texLocation, cullStateShard) -> {
+			return RenderType.create(
+				EpicFightMod.prefix("outline"),
+				DefaultVertexFormat.POSITION_COLOR_TEX,
+				VertexFormat.Mode.TRIANGLES,
+				256,
+				false,
+				false,
+				RenderType.CompositeState.builder()
+					.setShaderState(RENDERTYPE_OUTLINE_SHADER)
+					.setTextureState(new RenderStateShard.TextureStateShard(texLocation, false, false))
+					.setCullState(cullStateShard)
+					.setDepthTestState(NO_DEPTH_TEST)
+					.setOutputState(OUTLINE_TARGET)
+					.createCompositeState(RenderType.OutlineProperty.IS_OUTLINE)
+			);
+		});
+	
 	private static final Map<String, Map<ResourceLocation, RenderType>> TRIANGLED_RENDERTYPES_BY_NAME_TEXTURE = new HashMap<> ();
 	
 	private static final Function<RenderType, RenderType> TRIANGULATED_RENDER_TYPES = Util.memoize(renderType -> {
@@ -48,11 +69,19 @@ public final class EpicFightRenderTypes extends RenderType {
 		}
 		
 		if (renderType instanceof CompositeRenderType compositeRenderType) {
+			Optional<ResourceLocation> cutoutTexture;
+			
+			if (compositeRenderType.state.textureState instanceof TextureStateShard texStateShard) {
+				cutoutTexture = texStateShard.texture;
+			} else {
+				cutoutTexture = Optional.empty();
+			}
+			
 			if (TRIANGLED_RENDERTYPES_BY_NAME_TEXTURE.containsKey(renderType.name)) {
 				Map<ResourceLocation, RenderType> renderTypesByTexture = TRIANGLED_RENDERTYPES_BY_NAME_TEXTURE.get(renderType.name);
 				
-				if (compositeRenderType.state.textureState instanceof TextureStateShard texStateShard) {
-					ResourceLocation texLocation = texStateShard.texture.orElse(null);
+				if (compositeRenderType.state.textureState instanceof TextureStateShard) {
+					ResourceLocation texLocation = cutoutTexture.orElse(null);
 					
 					if (renderTypesByTexture.containsKey(texLocation)) {
 						return renderTypesByTexture.get(texLocation);
@@ -60,7 +89,7 @@ public final class EpicFightRenderTypes extends RenderType {
 				}
 			}
 			
-			return new CompositeRenderType(
+			CompositeRenderType triangulatedRenderType = new CompositeRenderType(
 				renderType.name,
 				renderType.format,
 				VertexFormat.Mode.TRIANGLES,
@@ -69,6 +98,12 @@ public final class EpicFightRenderTypes extends RenderType {
 				renderType.sortOnUpload,
 				compositeRenderType.state
 			);
+			
+			triangulatedRenderType.outline = triangulatedRenderType.outline.isEmpty() ? triangulatedRenderType.outline : cutoutTexture.map(texLocation -> {
+				return TRIANGULATED_OUTLINE.apply(texLocation, compositeRenderType.state.cullState);
+			});
+			
+			return triangulatedRenderType;
 		} else {
 			return renderType;
 		}
@@ -253,7 +288,7 @@ public final class EpicFightRenderTypes extends RenderType {
 	
 	private static final RenderType ENTITY_UI_COLORED = 
 		create(
-			  EpicFightMod.MODID + ":ui_color"
+			  EpicFightMod.prefix("ui_color")
 			, DefaultVertexFormat.POSITION_COLOR
 			, VertexFormat.Mode.QUADS
 			, 256
@@ -264,12 +299,12 @@ public final class EpicFightRenderTypes extends RenderType {
 				.setTransparencyState(TRANSLUCENT_TRANSPARENCY)
 				.setLightmapState(NO_LIGHTMAP)
 				.setOverlayState(NO_OVERLAY)
-				.createCompositeState(true)
+				.createCompositeState(false)
 		);
 	
 	private static final Function<ResourceLocation, RenderType> ENTITY_UI_TEXTURE = Util.memoize(
 		(textureLocation) -> create( 
-			  EpicFightMod.MODID + ":ui_texture"
+			  EpicFightMod.prefix("ui_texture")
 			, DefaultVertexFormat.POSITION_TEX
 			, VertexFormat.Mode.QUADS
 			, 256
@@ -281,12 +316,12 @@ public final class EpicFightRenderTypes extends RenderType {
 				.setTransparencyState(NO_TRANSPARENCY)
 				.setLightmapState(NO_LIGHTMAP)
 				.setOverlayState(NO_OVERLAY)
-				.createCompositeState(true)
+				.createCompositeState(false)
 		)
 	);
 	
 	private static final RenderType OBB = create(
-		  EpicFightMod.MODID + ":debug_collider"
+		  EpicFightMod.prefix("debug_collider")
 		, DefaultVertexFormat.POSITION_COLOR_NORMAL
 		, VertexFormat.Mode.LINE_STRIP
 		, 256
@@ -304,7 +339,7 @@ public final class EpicFightRenderTypes extends RenderType {
 	);
 	
 	private static final RenderType DEBUG_QUADS = create(
-		  EpicFightMod.MODID + ":debug_quad"
+		  EpicFightMod.prefix("debug_quad")
 		, DefaultVertexFormat.POSITION_COLOR
 		, VertexFormat.Mode.QUADS
 		, 256
@@ -320,7 +355,7 @@ public final class EpicFightRenderTypes extends RenderType {
 	);
 	
 	private static final RenderType GUI_TRIANGLE = create(
-		  EpicFightMod.MODID + ":gui_triangle"
+		  EpicFightMod.prefix("gui_triangle")
 		, DefaultVertexFormat.POSITION_COLOR
 		, VertexFormat.Mode.TRIANGLES
 		, 256
@@ -335,7 +370,7 @@ public final class EpicFightRenderTypes extends RenderType {
 	
 	private static final Function<ResourceLocation, RenderType> OVERLAY_MODEL = Util.memoize(texLocation -> {
 		return create(
-			EpicFightMod.MODID + ":overlay_model",
+			EpicFightMod.prefix("overlay_model"),
 			DefaultVertexFormat.NEW_ENTITY,
 			VertexFormat.Mode.TRIANGLES,
 			256,
@@ -356,7 +391,7 @@ public final class EpicFightRenderTypes extends RenderType {
 	
 	private static final RenderType ENTITY_AFTERIMAGE_WHITE = 
 		create(
-			EpicFightMod.MODID + ":entity_afterimage",
+			EpicFightMod.prefix("entity_afterimage"),
 			DefaultVertexFormat.PARTICLE,
 			VertexFormat.Mode.TRIANGLES,
 			256,
@@ -375,7 +410,7 @@ public final class EpicFightRenderTypes extends RenderType {
 	
 	private static final RenderType ITEM_AFTERIMAGE_WHITE = 
 		create(
-			EpicFightMod.MODID + ":item_afterimage",
+			EpicFightMod.prefix("item_afterimage"),
 			DefaultVertexFormat.PARTICLE,
 			VertexFormat.Mode.QUADS,
 			256,
@@ -394,7 +429,7 @@ public final class EpicFightRenderTypes extends RenderType {
 	
 	private static final Function<ResourceLocation, RenderType> ENTITY_PARTICLE = Util.memoize(texLocation -> {
 		return create(
-			EpicFightMod.MODID + ":entity_particle",
+			EpicFightMod.prefix("entity_particle"),
 			DefaultVertexFormat.NEW_ENTITY,
 			VertexFormat.Mode.TRIANGLES,
 			256,
@@ -414,7 +449,7 @@ public final class EpicFightRenderTypes extends RenderType {
 	
 	private static final RenderType ITEM_PARTICLE = 
 		create(
-			EpicFightMod.MODID + ":entity_particle",
+			EpicFightMod.prefix("item_particle"),
 			DefaultVertexFormat.NEW_ENTITY,
 			VertexFormat.Mode.QUADS,
 			256,
@@ -433,7 +468,7 @@ public final class EpicFightRenderTypes extends RenderType {
 	
 	private static final Function<ResourceLocation, RenderType> ENTITY_PARTICLE_STENCIL = Util.memoize(texLocation -> {
 		return create(
-			EpicFightMod.MODID + ":entity_particle_stencil",
+			EpicFightMod.prefix("entity_particle_stencil"),
 			DefaultVertexFormat.POSITION_TEX,
 			VertexFormat.Mode.TRIANGLES,
 			256,
@@ -449,7 +484,7 @@ public final class EpicFightRenderTypes extends RenderType {
 	
 	private static final RenderType ITEM_PARTICLE_STENCIL = 
 		create(
-			EpicFightMod.MODID + ":item_particle_stencil",
+			EpicFightMod.prefix("item_particle_stencil"),
 			DefaultVertexFormat.POSITION_TEX,
 			VertexFormat.Mode.QUADS,
 			256,
@@ -570,7 +605,7 @@ public final class EpicFightRenderTypes extends RenderType {
 		CompositeRenderType glintRenderType = WORLD_RENDERTYPES_COLORED_GLINT.computeIfAbsent(
 			owner,
 			k -> create(
-				EpicFightMod.MODID + ":colored_glint",
+				EpicFightMod.prefix("colored_glint"),
 				DefaultVertexFormat.POSITION_TEX,
 				VertexFormat.Mode.TRIANGLES,
 				256,

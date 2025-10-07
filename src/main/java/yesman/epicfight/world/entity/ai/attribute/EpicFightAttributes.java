@@ -146,22 +146,22 @@ public class EpicFightAttributes {
 	}
     
 	public static AttributeModifier getArmorNegationModifier(double value) {
-		return new AttributeModifier(EpicFightAttributes.ARMOR_NEGATION_MODIFIER, EpicFightMod.MODID + ":weapon_modifier", value, AttributeModifier.Operation.ADDITION);
+		return new AttributeModifier(EpicFightAttributes.ARMOR_NEGATION_MODIFIER, EpicFightMod.prefix("weapon_modifier"), value, AttributeModifier.Operation.ADDITION);
 	}
-
+	
 	public static AttributeModifier getMaxStrikesModifier(int value) {
-		return new AttributeModifier(EpicFightAttributes.MAX_STRIKE_MODIFIER, EpicFightMod.MODID + ":weapon_modifier", value, AttributeModifier.Operation.ADDITION);
+		return new AttributeModifier(EpicFightAttributes.MAX_STRIKE_MODIFIER, EpicFightMod.prefix("weapon_modifier"), value, AttributeModifier.Operation.ADDITION);
 	}
-
+	
 	public static AttributeModifier getImpactModifier(double value) {
-		return new AttributeModifier(EpicFightAttributes.IMPACT_MODIFIER, EpicFightMod.MODID + ":weapon_modifier", value, AttributeModifier.Operation.ADDITION);
+		return new AttributeModifier(EpicFightAttributes.IMPACT_MODIFIER, EpicFightMod.prefix("weapon_modifier"), value, AttributeModifier.Operation.ADDITION);
 	}
-
+	
 	public static AttributeModifier getDamageBonusModifier(double value) {
-		return new AttributeModifier(ATTACK_DAMAGE_MODIFIER, EpicFightMod.MODID + ":weapon_modifier", value, AttributeModifier.Operation.ADDITION);
+		return new AttributeModifier(ATTACK_DAMAGE_MODIFIER, EpicFightMod.prefix("weapon_modifier"), value, AttributeModifier.Operation.ADDITION);
 	}
-
+	
 	public static AttributeModifier getSpeedBonusModifier(double value) {
-		return new AttributeModifier(ATTACK_SPEED_MODIFIER, EpicFightMod.MODID + ":weapon_modifier", value, AttributeModifier.Operation.ADDITION);
+		return new AttributeModifier(ATTACK_SPEED_MODIFIER, EpicFightMod.prefix("weapon_modifier"), value, AttributeModifier.Operation.ADDITION);
 	}
 }

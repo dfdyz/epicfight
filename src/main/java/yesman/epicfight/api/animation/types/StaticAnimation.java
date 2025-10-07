@@ -141,11 +141,11 @@ public class StaticAnimation extends DynamicAnimation implements InverseKinemati
 			if (this.properties.containsKey(StaticAnimationProperty.IK_DEFINITION)) {
 				this.animationClip = AnimationManager.getInstance().loadAnimationClip(this, JsonAssetLoader::loadAllJointsClipForAnimation);
 				
-				this.getProperty(StaticAnimationProperty.IK_DEFINITION).ifPresent((ikDefinitions) -> {
+				this.getProperty(StaticAnimationProperty.IK_DEFINITION).ifPresent(ikDefinitions -> {
 					boolean correctY = this.getProperty(ActionAnimationProperty.MOVE_VERTICAL).orElse(false);
 					boolean correctZ = this.isMainFrameAnimation();
 					
-					List<BakedInverseKinematicsDefinition> bakedIKDefinitionList = ikDefinitions.stream().map((ikDefinition) -> ikDefinition.bake(this.armature, this.animationClip.getJointTransforms(), correctY, correctZ)).toList();
+					List<BakedInverseKinematicsDefinition> bakedIKDefinitionList = ikDefinitions.stream().map(ikDefinition -> ikDefinition.bake(this.armature, this.animationClip.getJointTransforms(), correctY, correctZ)).toList();
 					this.addProperty(StaticAnimationProperty.BAKED_IK_DEFINITION, bakedIKDefinitionList);
 					
 					// Remove the unbaked data
@@ -154,6 +154,8 @@ public class StaticAnimation extends DynamicAnimation implements InverseKinemati
 			} else {
 				this.animationClip = AnimationManager.getInstance().loadAnimationClip(this, JsonAssetLoader::loadClipForAnimation);
 			}
+			
+			this.animationClip.bakeKeyframes();
 		}
 	}
 	
@@ -193,7 +195,7 @@ public class StaticAnimation extends DynamicAnimation implements InverseKinemati
 		nextStartTime += totalTime - linkTime;
 		
 		dest.setNextStartTime(nextStartTime);
-		dest.getTransfroms().clear();
+		dest.getAnimationClip().reset();
 		dest.setTotalTime(totalTime);
 		dest.setConnectedAnimations(fromAnimation, this.getAccessor());
 		

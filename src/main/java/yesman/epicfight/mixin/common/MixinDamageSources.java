@@ -21,7 +21,7 @@ import yesman.epicfight.world.capabilities.projectile.ProjectilePatch;
 import yesman.epicfight.world.damagesource.EpicFightDamageSource;
 
 @Mixin(value = DamageSources.class)
-public class MixinDamageSources {
+public abstract class MixinDamageSources {
 	@Inject(at = @At(value = "HEAD"), method = "mobAttack(Lnet/minecraft/world/entity/LivingEntity;)Lnet/minecraft/world/damagesource/DamageSource;", cancellable = true)
 	public void epicfight$mobAttack(LivingEntity mob, CallbackInfoReturnable<DamageSource> callback) {
 		MobPatch<?> mobpatch = EpicFightCapabilities.getEntityPatch(mob, MobPatch.class);

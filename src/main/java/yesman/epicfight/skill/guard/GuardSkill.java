@@ -21,6 +21,7 @@ import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageTypes;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.phys.Vec3;
@@ -218,13 +219,14 @@ public class GuardSkill extends Skill implements HoldableSkill {
 	
 	public void guard(SkillContainer container, CapabilityItem itemCapability, TakeDamageEvent.Attack event, float knockback, float impact, boolean advanced) {
 		DamageSource damageSource = event.getDamageSource();
+		Entity offender = getOffender(damageSource);
 		
-		if (this.isBlockableSource(damageSource, advanced)) {
+		if (offender != null && this.isBlockableSource(damageSource, advanced)) {
 			event.getPlayerPatch().playSound(EpicFightSounds.CLASH.get(), -0.05F, 0.1F);
-			ServerPlayer serveerPlayer = event.getPlayerPatch().getOriginal();
-			EpicFightParticles.HIT_BLUNT.get().spawnParticleWithArgument(serveerPlayer.serverLevel(), HitParticleType.FRONT_OF_EYES, HitParticleType.ZERO, serveerPlayer, damageSource.getDirectEntity());
+			ServerPlayer serverPlayer = event.getPlayerPatch().getOriginal();
+			EpicFightParticles.HIT_BLUNT.get().spawnParticleWithArgument(serverPlayer.serverLevel(), HitParticleType.FRONT_OF_EYES, HitParticleType.ZERO, serverPlayer, offender);
 			
-			if (damageSource.getDirectEntity() instanceof LivingEntity livingEntity) {
+			if (offender instanceof LivingEntity livingEntity) {
 				knockback += EnchantmentHelper.getKnockbackBonus(livingEntity) * 0.1F;
 			}
 			
@@ -232,7 +234,7 @@ public class GuardSkill extends Skill implements HoldableSkill {
 			float consumeAmount = penalty * impact;
 			boolean canAfford = event.getPlayerPatch().consumeForSkill(this, Skill.Resource.STAMINA, consumeAmount);
 			
-			event.getPlayerPatch().knockBackEntity(damageSource.getDirectEntity().position(), knockback);
+			event.getPlayerPatch().knockBackEntity(offender.position(), knockback);
 			container.getDataManager().setDataSync(SkillDataKeys.PENALTY.get(), penalty);
 			container.getDataManager().setDataSync(SkillDataKeys.PENALTY_RESTORE_COUNTER.get(), container.getServerExecutor().getOriginal().tickCount);
 			
@@ -424,6 +426,11 @@ public class GuardSkill extends Skill implements HoldableSkill {
 		guiGraphics.blit(EpicFightSkills.GUARD.getSkillTexture(), (int)x, (int)y, 24, 24, 0, 0, 1, 1, 1, 1);
 		guiGraphics.drawString(gui.getFont(), String.format("x%.1f", container.getDataManager().getDataValue(SkillDataKeys.PENALTY.get())), x, y + 6, 16777215, true);
 		poseStack.popPose();
+	}
+	
+	
+	public static Entity getOffender(DamageSource damageSource) {
+		return damageSource.getDirectEntity() == null ? damageSource.getEntity() : damageSource.getDirectEntity();
 	}
 	
 	@Override

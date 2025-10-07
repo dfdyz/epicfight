@@ -137,6 +137,7 @@ public class EpicFightParticleRenderTypes {
 		@Override
 		public void end(Tesselator tesselator) {
 			tesselator.end();
+			Minecraft.getInstance().gameRenderer.lightTexture().turnOnLightLayer();
 		}
 		
 		@Override

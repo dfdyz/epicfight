@@ -45,6 +45,7 @@ public class ServerAnimator extends Animator {
 		
 		if (!nextAnimation.get().isMetaAnimation()) {
 			nextAnimation.get().setLinkAnimation(this.animationPlayer.getAnimation(), lastPose, true, transitionTimeModifier, this.entitypatch, this.linkAnimation);
+			this.linkAnimation.getAnimationClip().setBaked();
 			this.linkAnimation.putOnPlayer(this.animationPlayer, this.entitypatch);
 			this.entitypatch.updateEntityState();
 			this.nextAnimation = nextAnimation;

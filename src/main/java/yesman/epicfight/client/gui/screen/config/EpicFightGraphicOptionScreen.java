@@ -46,7 +46,7 @@ public class EpicFightGraphicOptionScreen extends EpicFightOptionSubScreen {
 		Button healthBarVisibilityOptionButton = Button.builder(Component.translatable("gui." + modid + ".health_bar_show_option." + ClientConfig.healthBarVisibility.toString()), (button) -> {
 			ClientConfig.healthBarVisibility = ClientConfig.healthBarVisibility.nextEnum();
 			button.setMessage(Component.translatable("gui." + modid + ".health_bar_show_option." + ClientConfig.healthBarVisibility.toString()));
-		}).pos(this.width / 2 - 165, this.height / 4 - 8).size(160, 20).tooltip(Tooltip.create(Component.translatable("gui." + modid + ".filter_animation.tooltip"))).build();
+		}).pos(this.width / 2 - 165, this.height / 4 - 8).size(160, 20).tooltip(Tooltip.create(Component.translatable("gui." + modid + ".health_bar_show_option.tooltip"))).build();
 		
 		this.optionsList.addSmall(showTargetIndicatorButton, healthBarVisibilityOptionButton);
 		
@@ -113,22 +113,36 @@ public class EpicFightGraphicOptionScreen extends EpicFightOptionSubScreen {
 		
 		buttonHeight += 24;
 		
+		Button enableMineBlockGuideButton = Button.builder(Component.translatable("gui." + modid + ".enable_mine_block_guide." + (ClientConfig.enableMineBlockGuide ? "on" : "off")), (button) -> {
+			ClientConfig.enableMineBlockGuide = !ClientConfig.enableMineBlockGuide;
+			button.setMessage(Component.translatable("gui." + modid + ".enable_mine_block_guide." + (ClientConfig.enableMineBlockGuide ? "on" : "off")));
+		}).pos(this.width / 2 - 165, this.height / 4 + buttonHeight).size(160, 20).tooltip(Tooltip.create(Component.translatable("gui." + modid + ".enable_mine_block_guide.tooltip"))).build();
+		
+		Button enableTargetEntityGuide = Button.builder(Component.translatable("gui." + modid + ".enable_target_entity_guide." + (ClientConfig.enableTargetEntityGuide ? "on" : "off")), (button) -> {
+			ClientConfig.enableTargetEntityGuide = !ClientConfig.enableTargetEntityGuide;
+			button.setMessage(Component.translatable("gui." + modid + ".enable_target_entity_guide." + (ClientConfig.enableTargetEntityGuide ? "on" : "off")));
+		}).pos(this.width / 2 + 5, this.height / 4 + buttonHeight).size(160, 20).tooltip(Tooltip.create(Component.translatable("gui." + modid + ".enable_target_entity_guide.tooltip"))).build();
+		
+		this.optionsList.addSmall(enableMineBlockGuideButton, enableTargetEntityGuide);
+		
+		buttonHeight += 24;
+		
 		Button firstPersonModelButton = Button.builder(Component.translatable("gui." + modid + ".first_person_model." + (ClientConfig.enableAnimatedFirstPersonModel ? "on" : "off")), (button) -> {
 			ClientConfig.enableAnimatedFirstPersonModel = !ClientConfig.enableAnimatedFirstPersonModel;
 			button.setMessage(Component.translatable("gui." + modid + ".first_person_model." + (ClientConfig.enableAnimatedFirstPersonModel ? "on" : "off")));
 		}).pos(this.width / 2 - 165, this.height / 4 + buttonHeight).size(160, 20).tooltip(Tooltip.create(Component.translatable("gui." + modid + ".first_person_model.tooltip"))).build();
 		
-		Button useAnimationShaderButton = Button.builder(Component.translatable("gui." + modid + ".use_compute_shader." + (ClientConfig.activateComputeShader ? "on" : "off")), (button) -> {
+		Button useComputeShaderButton = Button.builder(Component.translatable("gui." + modid + ".use_compute_shader." + (ClientConfig.activateComputeShader ? "on" : "off")), (button) -> {
 			ClientConfig.activateComputeShader = !ClientConfig.activateComputeShader;
 			button.setMessage(Component.translatable("gui." + modid + ".use_compute_shader." + (ClientConfig.activateComputeShader ? "on" : "off")));
 		}).pos(this.width / 2 + 5, this.height / 4 + buttonHeight).size(160, 20).tooltip(Tooltip.create(Component.translatable("gui." + modid + ".use_compute_shader.tooltip"))).build();
 		
 		if (!ComputeShaderProvider.supportComputeShader()) {
-			useAnimationShaderButton.active = false;
-			useAnimationShaderButton.setTooltip(Tooltip.create(Component.translatable("gui." + EpicFightMod.MODID + ".use_compute_shader.locked.tooltip")));
+			useComputeShaderButton.active = false;
+			useComputeShaderButton.setTooltip(Tooltip.create(Component.translatable("gui." + EpicFightMod.MODID + ".use_compute_shader.locked.tooltip")));
 		}
 		
-		this.optionsList.addSmall(firstPersonModelButton, useAnimationShaderButton);
+		this.optionsList.addSmall(firstPersonModelButton, useComputeShaderButton);
 		
 		buttonHeight += 24;
 		
@@ -141,8 +155,11 @@ public class EpicFightGraphicOptionScreen extends EpicFightOptionSubScreen {
 		
 		buttonHeight += 30;
 		
-		this.optionsList.addBig(new ColorSlider(this.font, this.width / 2 - 150, this.height / 4 + buttonHeight, 300, 20, Component.translatable("gui." + modid + ".aim_helper_color"),
-												ColorSlider.Style.CLASSIC, ClientConfig.aimHelperColor, (position, color) -> ClientConfig.aimHelperColor = position));
+		this.optionsList.addBig(
+			new ColorSlider(this.font, this.width / 2 - 150, this.height / 4 + buttonHeight, 300, 20, Component.translatable("gui." + modid + ".aim_helper_color"),
+					ColorSlider.Style.CLASSIC, ClientConfig.aimHelperColor, (position, color) -> ClientConfig.aimHelperColor = position
+			)
+		);
 		
 		this.addWidget(this.optionsList);
 	}

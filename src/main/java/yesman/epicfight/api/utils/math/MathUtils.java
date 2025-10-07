@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.joml.Math;
+import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -249,13 +250,12 @@ public class MathUtils {
 		return min;
 	}
 	
-	private static final Matrix4f BUFFER = new Matrix4f();
-	private static final OpenMatrix4f OPEN_MATRIX_BUFFER = new OpenMatrix4f();
-	
 	@Deprecated(forRemoval = true)
 	public static void translateStack(PoseStack poseStack, OpenMatrix4f mat) {
 		poseStack.translate(mat.m30, mat.m31, mat.m32);
 	}
+	
+	private static final OpenMatrix4f OPEN_MATRIX_BUFFER = new OpenMatrix4f();
 	
 	@Deprecated(forRemoval = true)
 	public static void rotateStack(PoseStack poseStack, OpenMatrix4f mat) {
@@ -270,9 +270,14 @@ public class MathUtils {
 		poseStack.scale(vector.x(), vector.y(), vector.z());
 	}
 	
+	private static final Matrix4f MATRIX4F = new Matrix4f();
+	private static final Matrix3f MATRIX3F = new Matrix3f();
+	
 	public static void mulStack(PoseStack poseStack, OpenMatrix4f mat) {
-		OpenMatrix4f.exportToMojangMatrix(mat, BUFFER);
-		poseStack.mulPoseMatrix(BUFFER);
+		OpenMatrix4f.exportToMojangMatrix(mat, MATRIX4F);
+		MATRIX3F.set(MATRIX4F);
+		poseStack.mulPoseMatrix(MATRIX4F);
+		poseStack.last().normal().mul(MATRIX3F);
 	}
 	
 	public static double getAngleBetween(Vec3f a, Vec3f b) {
